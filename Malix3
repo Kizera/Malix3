@@ -1,20 +1,193 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
-local Window = Library.CreateLib("Mali HUB", "Synapse")
+--// ส่วนตั้งค่าเริ่มต้น
 
--- เพิ่มหมวดหมู่ใหม่
-local Category1 = Window:NewCategory("Category 1")
+local services = setmetatable({}, {
+    __index = function(_, service)
+        return game:GetService(service)
+    end
+})
 
--- เพิ่มปุ่มในหมวดหมู่ใหม่
-local Button1 = Category1:NewButton("Button 1", function()
-    -- ใส่โค้ดที่ต้องการให้ทำงานเมื่อปุ่มถูกคลิก
-    print("Button 1 clicked!")
-end)
+local client = game.Players.LocalPlayer
 
--- เพิ่มหมวดหมู่อีกหนึ่งหมวดหมู่
-local Category2 = Window:NewCategory("Category 2")
+--// โหลดไลบรารี
 
--- เพิ่มปุ่มในหมวดหมู่อีกหนึ่งหมวดหมู่
-local Button2 = Category2:NewButton("Button 2", function()
-    -- ใส่โค้ดที่ต้องการให้ทำงานเมื่อปุ่มถูกคลิก
-    print("Button 2 clicked!")
-end)
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/vozoid/venus-library/main/eggmodified.lua", true))()
+
+--// ส่วนตั้งค่ารายการ Element
+
+local commons = {}
+local uncommons = {}
+local rares = {}
+local legends = {}
+local myths = {}
+local colors = {}
+local elements = {}
+
+do
+    local elementsData = services.ReplicatedStorage.Client.GetElements:InvokeServer()
+
+    for _, tbl in next, elementsData do
+        if type(tbl) == "table" then
+            local elementName = tbl[1]
+            local rarity = tbl[2]
+            local color = tbl[3]
+
+            colors[elementName] = color
+
+            if rarity == "Common" then
+                table.insert(commons, elementName)
+            elseif rarity == "Uncommon" then
+                table.insert(uncommons, elementName)
+            elseif rarity == "Rare" then
+                table.insert(rares, elementName)
+            elseif rarity == "Legend" then
+                table.insert(legends, elementName)
+            elseif rarity == "Myth" then
+                table.insert(myths, elementName)
+            end
+        end
+    end
+end
+
+--// ส่วนตั้งค่าอื่นๆ
+
+local found = false
+local request = syn and syn.request or request
+
+--// ส่วนตั้งค่า GUI
+
+local main = library:Load({Name = "EGG Farmer", Theme = "Dark", SizeX = 238, SizeY = (request and 399 or 362), ColorOverrides = {}})
+local aimbot = main:Tab("Main")
+local section = aimbot:Section({Name = "Autofarm", column = 1})
+
+-- ตัวแปรสำหรับการเก็บค่า
+local levelbeforespin, maxlevel, webhook, moves
+
+--// ส่วนเมนู Element Farmer
+
+section:Toggle({Name = "Element Farmer", Flag = "elementfarm", Callback = function(value)
+    if value == false then 
+        if client.Character and client.Character:FindFirstChild("Humanoid") then
+            client.Character.Humanoid.Health = 0
+        end
+
+        found = false 
+    end
+end})
+
+--// ส่วนเมนู Level Farmer
+
+levelbeforespin = section:Box({Name = "Level Before Spinning", Flag = "levelbeforespin"})
+levelbeforespin:Set("2")
+
+section:Toggle({Name = "Level Farmer", Flag = "levelfarm", Callback = function(value)
+    if value == false then 
+        if client.Character and client.Character:FindFirstChild("Humanoid") then
+            client.Character.Humanoid.Health = 0
+        end
+    end
+end})
+
+maxlevel = section:Box({Name = "Max Level", Flag = "maxlevel"})
+maxlevel:Set("100")
+
+-- ส่วนเมนู Element Selection
+
+section:Label("Commons")
+
+section:Dropdown({Content = commons, MultiChoice = true, Callback = function(tbl)
+    for _, elem in next, tbl do
+        elements[elem] = true
+    end
+end})
+
+section:Label("Uncommons")
+
+section:Dropdown({Content = uncommons, MultiChoice = true, Callback = function(tbl)
+    for _, elem in next, tbl do
+        elements[elem] = true
+    end
+end})
+
+section:Label("Rares")
+
+section:Dropdown({Content = rares, MultiChoice = true, Callback = function(tbl)
+    for _, elem in next, tbl do
+        elements[elem] = true
+    end
+end})
+
+section:Label("Legends")
+
+section:Dropdown({Content = legends, MultiChoice = true, Callback = function(tbl)
+    for _, elem in next, tbl do
+        elements[elem] = true
+    end
+end})
+
+section:Label("Myths")
+
+section:Dropdown({Content = myths, MultiChoice = true, Callback = function(tbl)
+    for _, elem in next, tbl do
+        elements[elem] = true
+    end
+end}) 
+
+-- ส่วนเมนู Webhook
+
+if request then
+    section:Toggle({Name = "Hide Webhook", Callback = function(value)
+        if value then
+            webhook:Hide()
+            main:Resize(-22)
+        else
+            webhook:Show()
+            main:Resize(22)
+        end
+    end})
+
+    webhook = section:Box({Name = "Discord Webhook", Flag = "webhook"})
+    webhook:Set("")
+end
+
+--// ส่วนหลัก
+
+-- รับข้อมูลการเคลื่อนไหวจาก ReplicatedStorage
+moves = services.ReplicatedStorage[client.UserId .. "Client"]
+
+-- ฟังก์ชันสำหรับรับระดับ
+local function getlevel()
+    local data = services.ReplicatedStorage.Client.GetLevels:InvokeServer()
+    for _, tbl in next, data do
+        if table.find(tbl, client) then
+            return tbl[2]
+        end
+    end
+end
+
+-- ฟังก์ชันสำหรับดำเนินการเคลื่อนไหว
+local function domoves()
+    for _, move in next, client.Backpack:GetChildren() do
+        local str = move.Name:split(" (")[1]
+
+        task.spawn(function()
+            moves.StartMove:FireServer(str)
+            moves.EndMove:FireServer(str)
+        end)
+    end
+end
+
+-- ฟังก์ชันสำหรับรอการเพิ่มระดับ Level ก่อนหมุน
+local function farmspinlevel()
+    repeat
+        domoves()
+        task.wait(0.1)
+    until
+        getlevel() >= tonumber(library.flags.levelbeforespin)
+end
+
+-- ตัวแปรสำหรับการนับการหมุน
+local rolls = 0
+
+-- ฟังก์ชันสำหรับแปลงสีเป็นรูปแบบ HEX
+function color3hex(color)
+   
