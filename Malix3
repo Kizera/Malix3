@@ -1,0 +1,20 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("Mali HUB", "Synapse")
+
+-- เพิ่มหมวดหมู่ใหม่
+local Category1 = Window:NewCategory("Category 1")
+
+-- เพิ่มปุ่มในหมวดหมู่ใหม่
+local Button1 = Category1:NewButton("Button 1", function()
+    -- ใส่โค้ดที่ต้องการให้ทำงานเมื่อปุ่มถูกคลิก
+    print("Button 1 clicked!")
+end)
+
+-- เพิ่มหมวดหมู่อีกหนึ่งหมวดหมู่
+local Category2 = Window:NewCategory("Category 2")
+
+-- เพิ่มปุ่มในหมวดหมู่อีกหนึ่งหมวดหมู่
+local Button2 = Category2:NewButton("Button 2", function()
+    -- ใส่โค้ดที่ต้องการให้ทำงานเมื่อปุ่มถูกคลิก
+    print("Button 2 clicked!")
+end)
